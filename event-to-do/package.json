@@ -5,6 +5,8 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
+    "prebuild": "npm run migrate",
+    "migrate": "npx drizzle-kit migrate",
     "start": "next start",
     "lint": "next lint"
   },
