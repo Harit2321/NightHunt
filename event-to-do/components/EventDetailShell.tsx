@@ -117,6 +117,7 @@ export default function EventDetailShell({ event, tasks }: Props) {
       if (!response.ok) {
         throw new Error('Delete failed');
       }
+      router.refresh();
       router.push('/');
     } catch {
       setDeleteError('Unable to delete event. Please try again.');
