@@ -82,6 +82,16 @@ export async function toggleTaskDone(eventId: string, taskId: string, done: bool
   };
 }
 
+export async function updateTaskTitle(eventId: string, taskId: string, title: string): Promise<TaskRecord | null> {
+  await db.update(tasks).set({ title }).where(and(eq(tasks.id, taskId), eq(tasks.eventId, eventId)));
+  const [task] = await db.select().from(tasks).where(and(eq(tasks.id, taskId), eq(tasks.eventId, eventId)));
+  if (!task) return null;
+  return {
+    ...task,
+    done: task.done ?? false
+  };
+}
+
 export async function deleteTask(eventId: string, taskId: string): Promise<void> {
   await db.delete(tasks).where(and(eq(tasks.id, taskId), eq(tasks.eventId, eventId)));
 }
