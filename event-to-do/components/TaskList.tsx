@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import type { TaskRecord } from '@/lib/types';
 import TaskItem from './TaskItem';
 
@@ -15,6 +15,11 @@ export default function TaskList({ tasks: initialTasks, eventId, onTaskUpdate, o
   const [tasks, setTasks] = useState(initialTasks);
   const [draggedTaskId, setDraggedTaskId] = useState<string | null>(null);
   const [savingTaskId, setSavingTaskId] = useState<string | null>(null);
+
+  // Sync local state with prop changes from parent
+  useEffect(() => {
+    setTasks(initialTasks);
+  }, [initialTasks]);
 
   const savePosition = useCallback(
     async (taskId: string, newPosition: number) => {
