@@ -1,17 +1,17 @@
 'use client';
 
 import { FormEvent, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import type { TaskRecord } from '@/lib/types';
 
 type Props = {
   eventId: string;
+  onTaskAdded?: (newTask: any) => void;
 };
 
-export default function AddTaskForm({ eventId }: Props) {
+export default function AddTaskForm({ eventId, onTaskAdded }: Props) {
   const [title, setTitle] = useState('');
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
-  const router = useRouter();
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -37,8 +37,9 @@ export default function AddTaskForm({ eventId }: Props) {
         return;
       }
 
+      const newTask = await response.json();
       setTitle('');
-      router.refresh();
+      onTaskAdded?.(newTask);
     } catch {
       setError('Unable to add task. Please check your network and try again.');
     } finally {

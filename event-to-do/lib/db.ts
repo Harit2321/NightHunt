@@ -53,7 +53,7 @@ export async function deleteEventAndTasks(id: string): Promise<void> {
 }
 
 export async function getTasksForEvent(eventId: string): Promise<TaskRecord[]> {
-  const result = await db.select().from(tasks).where(eq(tasks.eventId, eventId)).orderBy(asc(tasks.createdAt));
+  const result = await db.select().from(tasks).where(eq(tasks.eventId, eventId)).orderBy(asc(tasks.position));
   return result.map(task => ({
     ...task,
     done: task.done ?? false
@@ -61,11 +61,15 @@ export async function getTasksForEvent(eventId: string): Promise<TaskRecord[]> {
 }
 
 export async function addTask(eventId: string, title: string): Promise<TaskRecord> {
+  const existingTasks = await db.select().from(tasks).where(eq(tasks.eventId, eventId));
+  const position = existingTasks.length;
+  
   const task: TaskRecord = {
     id: crypto.randomUUID(),
     eventId,
     title,
     done: false,
+    position,
     createdAt: new Date().toISOString(),
   };
   await db.insert(tasks).values(task);
@@ -94,6 +98,16 @@ export async function updateTaskTitle(eventId: string, taskId: string, title: st
 
 export async function deleteTask(eventId: string, taskId: string): Promise<void> {
   await db.delete(tasks).where(and(eq(tasks.id, taskId), eq(tasks.eventId, eventId)));
+}
+
+export async function updateTaskPosition(eventId: string, taskId: string, position: number): Promise<TaskRecord | null> {
+  await db.update(tasks).set({ position }).where(and(eq(tasks.id, taskId), eq(tasks.eventId, eventId)));
+  const [task] = await db.select().from(tasks).where(and(eq(tasks.id, taskId), eq(tasks.eventId, eventId)));
+  if (!task) return null;
+  return {
+    ...task,
+    done: task.done ?? false
+  };
 }
 
 export async function getTaskSummary(eventId: string) {

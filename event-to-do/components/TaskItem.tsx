@@ -1,17 +1,30 @@
 'use client';
 
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
-import { CheckCircle2, Trash2, Edit2 } from 'lucide-react';
+import { CheckCircle2, Trash2, Edit2, GripHorizontal } from 'lucide-react';
 import type { TaskRecord } from '@/lib/types';
 
 type Props = {
   task: TaskRecord;
   eventId: string;
+  isDragging?: boolean;
+  onDragStart?: () => void;
+  onDragOver?: (e: React.DragEvent<HTMLLIElement>) => void;
+  onDrop?: (e: React.DragEvent<HTMLLIElement>) => void;
+  onTaskUpdate?: (updatedTask: TaskRecord) => void;
+  onTaskDelete?: (taskId: string) => void;
 };
 
-export default function TaskItem({ task, eventId }: Props) {
-  const router = useRouter();
+export default function TaskItem({
+  task,
+  eventId,
+  isDragging = false,
+  onDragStart,
+  onDragOver,
+  onDrop,
+  onTaskUpdate,
+  onTaskDelete,
+}: Props) {
   const [processing, setProcessing] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [editTitle, setEditTitle] = useState(task.title);
@@ -28,7 +41,8 @@ export default function TaskItem({ task, eventId }: Props) {
       if (!response.ok) {
         throw new Error('Update failed');
       }
-      router.refresh();
+      const updatedTask = await response.json();
+      onTaskUpdate?.(updatedTask);
     } catch {
       alert('Unable to update task. Please try again.');
     } finally {
@@ -62,8 +76,9 @@ export default function TaskItem({ task, eventId }: Props) {
         throw new Error('Update failed');
       }
 
+      const updatedTask = await response.json();
       setIsEditing(false);
-      router.refresh();
+      onTaskUpdate?.(updatedTask);
     } catch {
       setEditError('Unable to update task. Please try again.');
     } finally {
@@ -82,17 +97,19 @@ export default function TaskItem({ task, eventId }: Props) {
       if (!response.ok) {
         throw new Error('Delete failed');
       }
-      router.refresh();
+      onTaskDelete?.(task.id);
     } catch {
       alert('Unable to delete task. Please try again.');
-    } finally {
       setProcessing(false);
     }
   }
 
   if (isEditing) {
     return (
-      <li className="flex flex-col gap-3 rounded-3xl border border-slate-200 bg-slate-50 px-4 py-4">
+      <li
+        draggable={false}
+        className="flex flex-col gap-3 rounded-3xl border border-slate-200 bg-slate-50 px-4 py-4"
+      >
         <div className="flex gap-3">
           <input
             type="text"
@@ -141,13 +158,34 @@ export default function TaskItem({ task, eventId }: Props) {
   }
 
   return (
-    <li className="flex items-center justify-between gap-4 rounded-3xl border border-slate-200 bg-slate-50 px-4 py-4 transition-default hover:border-slate-300">
-      <button type="button" onClick={toggleDone} disabled={processing} className="flex items-center gap-3 text-left disabled:cursor-not-allowed">
-        <span className={`grid h-9 w-9 place-items-center rounded-2xl border ${task.done ? 'border-brand-600 bg-brand-600 text-white' : 'border-slate-300 bg-white text-slate-500'} transition-default`}>
-          <CheckCircle2 size={18} />
-        </span>
-        <span className={`${task.done ? 'line-through text-slate-400' : 'text-slate-900'}`}>{task.title}</span>
-      </button>
+    <li
+      draggable
+      onDragStart={(e) => {
+        e.dataTransfer.effectAllowed = 'move';
+        onDragStart?.();
+      }}
+      onDragOver={onDragOver}
+      onDrop={onDrop}
+      className={`flex items-center justify-between gap-4 rounded-3xl border border-slate-200 bg-slate-50 px-4 py-4 transition-default hover:border-slate-300 ${
+        isDragging ? 'opacity-50' : ''
+      } cursor-grab active:cursor-grabbing`}
+    >
+      <div className="flex items-center gap-3">
+        <div className="text-slate-400 transition-colors hover:text-slate-600">
+          <GripHorizontal size={18} />
+        </div>
+        <button
+          type="button"
+          onClick={toggleDone}
+          disabled={processing}
+          className="flex items-center gap-3 text-left disabled:cursor-not-allowed"
+        >
+          <span className={`grid h-9 w-9 place-items-center rounded-2xl border ${task.done ? 'border-brand-600 bg-brand-600 text-white' : 'border-slate-300 bg-white text-slate-500'} transition-default`}>
+            <CheckCircle2 size={18} />
+          </span>
+          <span className={`${task.done ? 'line-through text-slate-400' : 'text-slate-900'}`}>{task.title}</span>
+        </button>
+      </div>
       <div className="flex gap-2">
         <button type="button" onClick={() => setIsEditing(true)} disabled={processing} className="inline-flex h-10 w-10 items-center justify-center rounded-2xl border border-slate-200 bg-white text-slate-500 transition-default hover:border-blue-300 hover:text-blue-700 disabled:cursor-not-allowed disabled:opacity-60">
           <Edit2 size={16} />

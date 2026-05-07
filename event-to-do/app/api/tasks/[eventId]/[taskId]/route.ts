@@ -1,9 +1,15 @@
 import { NextResponse } from 'next/server';
-import { deleteTask, toggleTaskDone, updateTaskTitle } from '@/lib/db';
+import { deleteTask, toggleTaskDone, updateTaskTitle, updateTaskPosition } from '@/lib/db';
 
 export async function PUT(request: Request, { params }: { params: { eventId: string; taskId: string } }) {
   const body = await request.json();
-  const { done, title } = body;
+  const { done, title, position } = body;
+
+  // If position is provided, update the position
+  if (position !== undefined) {
+    const task = await updateTaskPosition(params.eventId, params.taskId, position);
+    return task ? NextResponse.json(task) : NextResponse.json({ error: 'Task not found' }, { status: 404 });
+  }
 
   // If title is provided, update the title
   if (title !== undefined) {

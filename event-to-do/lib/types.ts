@@ -13,5 +13,6 @@ export type TaskRecord = {
   eventId: string;
   title: string;
   done: boolean;
+  position: number;
   createdAt: string;
 };

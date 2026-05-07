@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { MapPin } from 'lucide-react';
 import type { EventRecord, TaskRecord } from '@/lib/types';
 import EventForm from './EventForm';
-import TaskItem from './TaskItem';
+import TaskList from './TaskList';
 
 type Props = {
   event: EventRecord;
@@ -14,13 +14,13 @@ type Props = {
 
 type AddTaskFormProps = {
   eventId: string;
+  onTaskAdded?: (newTask: TaskRecord) => void;
 };
 
-function AddTaskForm({ eventId }: AddTaskFormProps) {
+function AddTaskForm({ eventId, onTaskAdded }: AddTaskFormProps) {
   const [title, setTitle] = useState('');
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
-  const router = useRouter();
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -46,8 +46,9 @@ function AddTaskForm({ eventId }: AddTaskFormProps) {
         return;
       }
 
+      const newTask = await response.json();
       setTitle('');
-      router.refresh();
+      onTaskAdded?.(newTask);
     } catch {
       setError('Unable to add task. Please check your network and try again.');
     } finally {
@@ -77,33 +78,23 @@ function AddTaskForm({ eventId }: AddTaskFormProps) {
   );
 }
 
-type TaskListProps = {
-  tasks: TaskRecord[];
-  eventId: string;
-};
-
-function TaskList({ tasks, eventId }: TaskListProps) {
-  if (tasks.length === 0) {
-    return (
-      <div className="rounded-3xl border border-dashed border-slate-300 bg-white p-10 text-center text-sm text-slate-600">
-        No tasks yet — add one above.
-      </div>
-    );
-  }
-
-  return (
-    <ul className="space-y-4">
-      {tasks.map((task) => (
-        <TaskItem key={task.id} task={task} eventId={eventId} />
-      ))}
-    </ul>
-  );
-}
-
-export default function EventDetailShell({ event, tasks }: Props) {
+export default function EventDetailShell({ event, tasks: initialTasks }: Props) {
+  const [tasks, setTasks] = useState(initialTasks);
   const [showDialog, setShowDialog] = useState(false);
   const [deleteError, setDeleteError] = useState('');
   const router = useRouter();
+
+  const handleTaskAdded = (newTask: TaskRecord) => {
+    setTasks([...tasks, newTask]);
+  };
+
+  const handleTaskUpdate = (updatedTask: TaskRecord) => {
+    setTasks(tasks.map((t) => (t.id === updatedTask.id ? updatedTask : t)));
+  };
+
+  const handleTaskDelete = (taskId: string) => {
+    setTasks(tasks.filter((t) => t.id !== taskId));
+  };
 
   async function handleDelete() {
     if (!confirm('Delete this event and all tasks?')) {
@@ -186,10 +177,10 @@ export default function EventDetailShell({ event, tasks }: Props) {
             <p className="text-sm uppercase tracking-[0.3em] text-brand-600">Tasks</p>
             <h2 className="mt-2 text-2xl font-semibold text-slate-950">{tasks.length} task{tasks.length === 1 ? '' : 's'}</h2>
           </div>
-          <AddTaskForm eventId={event.id} />
+          <AddTaskForm eventId={event.id} onTaskAdded={handleTaskAdded} />
         </div>
         <div className="mt-8">
-          <TaskList tasks={tasks} eventId={event.id} />
+          <TaskList tasks={tasks} eventId={event.id} onTaskUpdate={handleTaskUpdate} onTaskDelete={handleTaskDelete} />
         </div>
       </section>
     </div>

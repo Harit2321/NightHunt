@@ -15,5 +15,6 @@ export const tasks = sqliteTable('tasks', {
   eventId: text('event_id').notNull(),
   title: text('title').notNull(),
   done: integer('done', { mode: 'boolean' }).default(false),
+  position: integer('position').notNull().default(0),
   createdAt: text('created_at').notNull(),
 });
